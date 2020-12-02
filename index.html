@@ -82,6 +82,7 @@
         var COLOR_ANIM_END = search.has("a") ? parseFloat(search.get("a")) : 360;
         var REPEAT = search.has("p") ? parseInt(search.get("p")) : 1;
         var BACKGROUND = search.has("b") ? "#" + search.get("b") : "#efefef";
+        var SLOPE = search.has("n") ? parseFloat(search.get("n")) : 0;
         var FONTSIZE = search.has("o") ? parseFloat(search.get("o")) : 2;
         var FONT = search.has("f") ? search.get("f") : "";
         var TEXT = search.has("t") ? search.get("t") : "matt's the celeste wizard :)";
@@ -113,7 +114,8 @@
 
                 for(var i = 0; i < letterElems.length; i++) {
                     var xPos = positions[i];
-                    var yPos = Math.sin((xPos + wavePosition)/WAVELENGTH)*MAGNITUDE;
+                                                                                     //center for slope calculation
+                    var yPos = Math.sin((xPos + wavePosition)/WAVELENGTH)*MAGNITUDE + ((0.5-xPos) * SLOPE);
                     //snap to given step amount
                     if(STEPS > 0) yPos = ((Math.floor(yPos*STEPS)) / STEPS) + (1 / (STEPS * 2));
                 
@@ -199,7 +201,8 @@
                    "&f=" + encodeURIComponent(FONT) +
                    "&t=" + encodeURIComponent(TEXT) + 
                    "&p=" + REPEAT +
-                   "&o=" + FONTSIZE;
+                   "&o=" + FONTSIZE +
+                   "&n=" + SLOPE;
         }
 
         function calculateXPositions(letterElems) {
@@ -265,11 +268,16 @@
             <li><label><input type="number" data-prop="FONTSIZE" data-prop-reprocess="setFontSize">Font Size</label></li>
             <li><label><input type="text" data-prop="TEXT" data-prop-reprocess="createLetterElements">Text</label></li>
             <li><label><input type="number" data-prop="REPEAT" data-prop-reprocess="createLetterElements">Repeat Count</label></li>
+            <li><label><input type="number" data-prop="SLOPE">Wave Slope</label></li>
             <li>
                 <hr>
                 <a href="https://github.com/coleh2/sinwavetext" rel="noopener" target="_blank">This Project on Github</a>
                 &bull;
                 <a href="https://fonts.google.com/" rel="noopener" target="_blank">Fonts You Can Use (Google Fonts)</a>
+                <hr>
+            </li>
+            <li>
+                <button id="shortlink">Make Shortlink of Current Page</button> <a href="#" aria-hidden="true" id="shortlink-shower"></a>
             </li>
         </ul>
     </div>
