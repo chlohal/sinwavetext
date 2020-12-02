@@ -1,0 +1,278 @@
+<html>
+
+<head>
+    <title id="title">matt is the celeste wizard person of course</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            font-family: 'Cinzel Decorative', cursive;
+        }
+        body {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            align-items: center;
+            justify-content: center;
+            background-color: #efefef;
+            margin: 0px;
+            padding: 0px;
+            font-size: 2em;
+            overflow: hidden;
+        }
+
+        h1 {
+            text-align: center;
+            max-width: 100vw;
+            white-space:pre-wrap;
+            word-break: keep-all;
+        }
+
+        h1 span {
+            display: inline-block;
+        }
+        #controls {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            background: #0005;
+            width: 3.5rem;
+            height: 3.5rem;
+            overflow: hidden;
+            font-size: 1rem;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            transition: all 1s;
+        }
+        #controls:hover, #controls:focus-within {
+            width: max-content;
+            height: max-content;
+            max-width: 100vw;
+            max-height: 80vh;
+        }
+
+        #controls #controls-icon {
+            height: 2rem;
+            width: 2rem;
+            margin: 0.75rem;
+            display: block;
+            position: absolute;
+        }
+        #controls:hover #controls-icon, #controls:focus-within #controls-icon {
+            display: none;
+        }
+
+        #controls #controls-inputs {
+            display: none;
+        }
+        #controls:hover #controls-inputs, #controls:focus-within #controls-inputs {
+            display: block;
+            padding: 0.5rem;
+        }
+        
+        
+    </style>
+    <script>
+        var search = new URLSearchParams(location.search);
+        var ANIM_LENGTH = search.has("d") ? parseFloat(search.get("d")) : 10000;
+        var MAGNITUDE = search.has("m") ? parseFloat(search.get("m")) : 0.25;
+        var WAVELENGTH = search.has("w") ? parseFloat(search.get("w")) : 0.125;
+        var ROTATION_DAMPING_FACTOR = search.has("r") ? parseFloat(search.get("r")) : 0.5;
+        var STEPS = search.has("s") ? parseInt(search.get("s")) : 0;
+        var COLOR_ANIM_START = search.has("c") ? parseFloat(search.get("c")) : 240;
+        var COLOR_ANIM_END = search.has("a") ? parseFloat(search.get("a")) : 360;
+        var REPEAT = search.has("p") ? parseInt(search.get("p")) : 1;
+        var BACKGROUND = search.has("b") ? "#" + search.get("b") : "#efefef";
+        var FONTSIZE = search.has("o") ? parseFloat(search.get("o")) : 2;
+        var FONT = search.has("f") ? search.get("f") : "";
+        var TEXT = search.has("t") ? search.get("t") : "matt's the celeste wizard :)";
+
+        if(FONT) loadFont();
+
+        var positions = [];
+        var letterElems = [];
+
+        var animationPosCache = {};
+        
+        window.addEventListener("load", function () {
+            setPageBg();
+            setFontSize();
+            createLetterElements();
+
+            //re-calculate on window resize. Seperate calls by at least 100ms to prevent lag when resizing.
+            window.addEventListener('resize', debounce(100, function(event){
+                positions = calculateXPositions(letterElems);
+            }));
+
+            requestAnimationFrame(function anim(timestamp) {
+                var animFrameCount = Math.round(ANIM_LENGTH/1000 * 60);
+                //calculate the percentage into the animation we are. Round to nearest (60 * animation seconds)th for 60 FPS.
+                var animPosition = (timestamp % ANIM_LENGTH) / ANIM_LENGTH;
+                animPosition = Math.round(animPosition*animFrameCount)/animFrameCount;
+
+                var wavePosition = animPosition * Math.PI*2;
+
+                for(var i = 0; i < letterElems.length; i++) {
+                    var xPos = positions[i];
+                    var yPos = Math.sin((xPos + wavePosition)/WAVELENGTH)*MAGNITUDE;
+                    //snap to given step amount
+                    if(STEPS > 0) yPos = ((Math.floor(yPos*STEPS)) / STEPS) + (1 / (STEPS * 2));
+                
+                    letterElems[i].style.color = `hsl(${(wavePosition+xPos)*Math.abs(COLOR_ANIM_END - COLOR_ANIM_START)+Math.min(COLOR_ANIM_START, COLOR_ANIM_END)}, 40%, 30%)`;
+                    letterElems[i].style.transform = `translateY(${yPos}em) rotate(${Math.cos((xPos + wavePosition)/WAVELENGTH)*45*MAGNITUDE*ROTATION_DAMPING_FACTOR}deg)`; 
+                }
+
+                requestAnimationFrame(anim);
+            });
+
+            var inputsToConnect = document.querySelectorAll("input[data-prop]");
+            inputsToConnect.forEach(connectDebugInput);
+        });
+
+
+        function connectDebugInput(inpt) {
+            inpt.value = window[inpt.getAttribute("data-prop")];
+            
+            inpt.addEventListener("input", function() {
+                window[inpt.getAttribute("data-prop")] = inpt.value;
+                if(inpt.hasAttribute("data-prop-reprocess")) window[inpt.getAttribute("data-prop-reprocess")]();
+
+                updateQueryStringFromLocalChanges();
+            });
+        }
+
+        function updateQueryStringFromLocalChanges() {
+            var url = window.location.toString();
+
+            var newUrl = url.replace(window.location.search, "") + buildQuery();
+            history.replaceState(null, "", newUrl);
+        }
+
+        function setPageBg() {
+            document.body.style.background = BACKGROUND;
+        }
+
+        function setFontSize() {
+            document.body.style.fontSize = FONTSIZE + "em";
+            positions = calculateXPositions(letterElems);
+        }
+
+        function createLetterElements() {
+            document.getElementById("title").innerText = TEXT.substring(0,127);
+
+            var repeated = TEXT.repeat(REPEAT);
+            var letters = repeated.split("");
+
+            letterElems = [];
+
+            clearChildren(document.getElementById("t"));
+
+            letters.forEach(function (l, i) {
+                var lttr = document.createElement("span");
+                letterElems.push(lttr);
+                lttr.innerText = l;
+
+                document.getElementById("t").appendChild(lttr);
+            });
+
+            //cache x-positions for better performance later
+            positions = calculateXPositions(letterElems);
+
+            //invalidate cache after updating 
+            animationPosCache = {};
+        }
+
+        function clearChildren(elem) {
+            while(elem.children[0]) {
+                elem.removeChild(elem.children[0]);
+            }
+        }
+
+        function buildQuery() {
+            return "?d=" + ANIM_LENGTH + 
+                   "&m=" + MAGNITUDE +
+                   "&w=" + WAVELENGTH +
+                   "&r=" + ROTATION_DAMPING_FACTOR +
+                   "&s=" + STEPS +
+                   "&c=" + COLOR_ANIM_START +
+                   "&a=" + COLOR_ANIM_END +
+                   "&b=" + BACKGROUND.substring(1) +
+                   "&f=" + encodeURIComponent(FONT) +
+                   "&t=" + encodeURIComponent(TEXT) + 
+                   "&p=" + REPEAT +
+                   "&o=" + FONTSIZE;
+        }
+
+        function calculateXPositions(letterElems) {
+            var positions = [];
+            letterElems.forEach(function(l, i) {
+                let rect = l.getBoundingClientRect();
+                positions.push((rect.x + rect.width / 2)/ window.innerWidth);
+            });
+            return positions;
+        }
+
+
+        function debounce(delay, cb) {
+            var timeout;
+
+            return function() {
+                var context = this, args = arguments;
+
+                if(timeout) clearTimeout(timeout);
+                timeout = setTimeout(function() {
+                    cb.apply(context, args);
+                }, delay)
+            }
+        }
+
+        function loadFont() {
+            var fontName = FONT;
+            var formFontName = fontName.replace(/ /g, "+");
+            var gFontUrl = `https://fonts.googleapis.com/css2?family=${formFontName}&display=swap`;
+
+            var link = document.createElement("link");
+            link.href = gFontUrl;
+            link.rel = "stylesheet";
+            link.addEventListener("load", function() {
+                positions = calculateXPositions(letterElems);
+            });
+            link.addEventListener("error", function() {
+                positions = calculateXPositions(letterElems);
+            })
+
+            document.head.appendChild(link);
+
+            document.documentElement.style.fontFamily = formFontName.replace(/\+/g, " ") + ", cursive";
+        }
+    </script>
+    <script async defer src="https://counter.clh.sh/counter.js"></script>
+</head>
+
+<body>
+    <h1 id="t"></h1>
+    <div id="controls">
+        <svg id="controls-icon" width="24" height="24" xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd"><path fill="white" d="M24 19h-1v-2.2c-1.853 4.237-6.083 7.2-11 7.2-6.623 0-12-5.377-12-12h1c0 6.071 4.929 11 11 11 4.66 0 8.647-2.904 10.249-7h-2.249v-1h4v4zm-11.036 0h-1.886c-.34-.957-.437-1.571-1.177-1.878h-.001c-.743-.308-1.251.061-2.162.494l-1.333-1.333c.427-.899.804-1.415.494-2.163-.308-.74-.926-.839-1.878-1.177v-1.886c.954-.339 1.57-.437 1.878-1.178.308-.743-.06-1.248-.494-2.162l1.333-1.333c.918.436 1.421.801 2.162.494l.001-.001c.74-.307.838-.924 1.177-1.877h1.886c.34.958.437 1.57 1.177 1.877l.001.001c.743.308 1.252-.062 2.162-.494l1.333 1.333c-.435.917-.801 1.421-.494 2.161v.001c.307.739.915.835 1.878 1.178v1.886c-.953.338-1.571.437-1.878 1.178-.308.743.06 1.249.494 2.162l-1.333 1.333c-.92-.438-1.42-.802-2.157-.496-.746.31-.844.926-1.183 1.88zm-.943-4.667c-1.289 0-2.333-1.044-2.333-2.333 0-1.289 1.044-2.334 2.333-2.334 1.289 0 2.333 1.045 2.333 2.334 0 1.289-1.044 2.333-2.333 2.333zm-8.021-5.333h-4v-4h1v2.2c1.853-4.237 6.083-7.2 11-7.2 6.623 0 12 5.377 12 12h-1c0-6.071-4.929-11-11-11-4.66 0-8.647 2.904-10.249 7h2.249v1z"/></svg>
+        <ul id="controls-inputs">
+            <li><label><input type="number" data-prop="ANIM_LENGTH">Animation Length (milliseconds)</label></li>
+            <li><label><input type="number" data-prop="MAGNITUDE">Wave Magnitude</label></li>
+            <li><label><input type="number" data-prop="WAVELENGTH">Wave Wavelength</label></li>
+            <li><label><input type="number" data-prop="ROTATION_DAMPING_FACTOR">Letter Rotation Damping</label></li>
+            <li><label><input type="number" data-prop="STEPS">Stepping</label></li>
+            <li><label><input type="number" data-prop="COLOR_ANIM_START">Color Animation Start Hue</label></li>
+            <li><label><input type="number" data-prop="COLOR_ANIM_END">Color Animation End Hue</label></li>
+            <li><label><input type="color" data-prop="BACKGROUND" data-prop-reprocess="setPageBg">Page Background</label></li>
+            <li><label><input type="text" data-prop="FONT" data-prop-reprocess="loadFont">Font</label></li>
+            <li><label><input type="number" data-prop="FONTSIZE" data-prop-reprocess="setFontSize">Font Size</label></li>
+            <li><label><input type="text" data-prop="TEXT" data-prop-reprocess="createLetterElements">Text</label></li>
+            <li><label><input type="number" data-prop="REPEAT" data-prop-reprocess="createLetterElements">Repeat Count</label></li>
+            <li>
+                <hr>
+                <a href="https://github.com/coleh2/sinwavetext" rel="noopener" target="_blank">This Project on Github</a>
+                &bull;
+                <a href="https://fonts.google.com/" rel="noopener" target="_blank">Fonts You Can Use (Google Fonts)</a>
+            </li>
+        </ul>
+    </div>
+</body>
+
+</html>
