@@ -5,7 +5,7 @@ exports.handler = async function (event, context) {
 
     const options = {
         hostname: "jsonbin.org",
-        path: "/coleh2/swt/",
+        path: "/coleh2/swt/" + (event.queryStringParameters.i || "0"),
         method: 'GET',
         headers: { "Content-Type": "application/json", "Authorization": "token " + process.env.JSONBIN_API }
     }
