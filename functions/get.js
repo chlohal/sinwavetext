@@ -10,10 +10,15 @@ exports.handler = async function (event, context) {
         headers: { "Content-Type": "application/json", "Authorization": "token " + process.env.JSONBIN_API }
     }
 
+    console.log(options);
+            
+
     var req = https.request(options, function (res) {
         res.setEncoding("utf8");
 
         res.on("data", function (body) {
+            console.log(body);
+
             var jsonResBody = JSON.parse(body);
             return {
                 statusCode: 201,
@@ -23,6 +28,7 @@ exports.handler = async function (event, context) {
     });
 
     req.on("error", function(err) {
+        console.log(err);
         return {
             statusCode: 500,
             body: err.message
