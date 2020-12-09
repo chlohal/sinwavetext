@@ -2,6 +2,8 @@
 
 <head>
     <title id="title">matt is the celeste wizard person of course</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -137,7 +139,7 @@
                     body: query
                 }).then(function(response) {
                     response.text().then(function(resText) {
-                        updateQueryStringFromLocalChanges(`?i=${resText}`)
+                        updateQueryStringFromLocalChanges(`?i=${resText}`);
                     });
                 });
             });
