@@ -76,17 +76,19 @@
 
 
         if(search.has("i")) {
-            fetch(`/.netlify/functions/get?i=` + search.get("i")).then(function(response) {
-                console.log(response);
-                response.text().then(function(qS) {
-                    updateQueryStringFromLocalChanges(qS);
-                    search = new URLSearchParams(qS);
-                    init();
-                })
-                
-            }).catch(init);
+            window.addEventListener("load", function() {
+                fetch(`/.netlify/functions/get?i=` + search.get("i")).then(function(response) {
+                    console.log(response);
+                    response.text().then(function(qS) {
+                        updateQueryStringFromLocalChanges(qS);
+                        search = new URLSearchParams(qS);
+                        init();
+                    })
+                    
+                }).catch(init);
+            })
         } else {
-            init();
+            window.addEventListener("load", init);
         }
         function init() {
             console.log("initializing!");
@@ -112,60 +114,58 @@
             var letterElems = [];
 
             var animationPosCache = {};
-            
-            window.addEventListener("load", function () {
-                setPageBg();
-                setFontSize();
-                createLetterElements();
 
-                //re-calculate on window resize. Seperate calls by at least 100ms to prevent lag when resizing.
-                window.addEventListener('resize', debounce(100, function(event){
-                    positions = calculateXPositions(letterElems);
-                }));
+            setPageBg();
+            setFontSize();
+            createLetterElements();
 
-                document.getElementById("shortlink").addEventListener("click", function() {
-                    updateQueryStringFromLocalChanges();
+            //re-calculate on window resize. Seperate calls by at least 100ms to prevent lag when resizing.
+            window.addEventListener('resize', debounce(100, function(event){
+                positions = calculateXPositions(letterElems);
+            }));
 
-                    var query = window.location.search;
+            document.getElementById("shortlink").addEventListener("click", function() {
+                updateQueryStringFromLocalChanges();
 
-                    fetch("/.netlify/functions/save", {
-                        method: "POST",
-                        mode: "cors", 
-                        cache: "no-cache",
-                        credentials: "same-origin",
-                        body: query
-                    }).then(function(response) {
-                        response.text().then(function(resText) {
-                            updateQueryStringFromLocalChanges(`?i=${resText}`)
-                        });
+                var query = window.location.search;
+
+                fetch("/.netlify/functions/save", {
+                    method: "POST",
+                    mode: "cors", 
+                    cache: "no-cache",
+                    credentials: "same-origin",
+                    body: query
+                }).then(function(response) {
+                    response.text().then(function(resText) {
+                        updateQueryStringFromLocalChanges(`?i=${resText}`)
                     });
                 });
-
-                requestAnimationFrame(function anim(timestamp) {
-                    var animFrameCount = Math.round(ANIM_LENGTH/1000 * 60);
-                    //calculate the percentage into the animation we are. Round to nearest (60 * animation seconds)th for 60 FPS.
-                    var animPosition = (timestamp % ANIM_LENGTH) / ANIM_LENGTH;
-                    animPosition = Math.round(animPosition*animFrameCount)/animFrameCount;
-
-                    var wavePosition = animPosition * Math.PI*2;
-
-                    for(var i = 0; i < letterElems.length; i++) {
-                        var xPos = positions[i];
-                                                                                        //center for slope calculation
-                        var yPos = Math.sin((xPos + wavePosition)/WAVELENGTH)*MAGNITUDE + ((0.5-xPos) * SLOPE);
-                        //snap to given step amount
-                        if(STEPS > 0) yPos = ((Math.floor(yPos*STEPS)) / STEPS) + (1 / (STEPS * 2));
-                    
-                        letterElems[i].style.color = `hsl(${(wavePosition+xPos)*Math.abs(COLOR_ANIM_END - COLOR_ANIM_START)+Math.min(COLOR_ANIM_START, COLOR_ANIM_END)}, 40%, 30%)`;
-                        letterElems[i].style.transform = `translateY(${yPos}em) rotate(${Math.cos((xPos + wavePosition)/WAVELENGTH)*45*MAGNITUDE*ROTATION_DAMPING_FACTOR}deg)`; 
-                    }
-
-                    requestAnimationFrame(anim);
-                });
-
-                var inputsToConnect = document.querySelectorAll("input[data-prop]");
-                inputsToConnect.forEach(connectDebugInput);
             });
+
+            requestAnimationFrame(function anim(timestamp) {
+                var animFrameCount = Math.round(ANIM_LENGTH/1000 * 60);
+                //calculate the percentage into the animation we are. Round to nearest (60 * animation seconds)th for 60 FPS.
+                var animPosition = (timestamp % ANIM_LENGTH) / ANIM_LENGTH;
+                animPosition = Math.round(animPosition*animFrameCount)/animFrameCount;
+
+                var wavePosition = animPosition * Math.PI*2;
+
+                for(var i = 0; i < letterElems.length; i++) {
+                    var xPos = positions[i];
+                                                                                    //center for slope calculation
+                    var yPos = Math.sin((xPos + wavePosition)/WAVELENGTH)*MAGNITUDE + ((0.5-xPos) * SLOPE);
+                    //snap to given step amount
+                    if(STEPS > 0) yPos = ((Math.floor(yPos*STEPS)) / STEPS) + (1 / (STEPS * 2));
+                
+                    letterElems[i].style.color = `hsl(${(wavePosition+xPos)*Math.abs(COLOR_ANIM_END - COLOR_ANIM_START)+Math.min(COLOR_ANIM_START, COLOR_ANIM_END)}, 40%, 30%)`;
+                    letterElems[i].style.transform = `translateY(${yPos}em) rotate(${Math.cos((xPos + wavePosition)/WAVELENGTH)*45*MAGNITUDE*ROTATION_DAMPING_FACTOR}deg)`; 
+                }
+
+                requestAnimationFrame(anim);
+            });
+
+            var inputsToConnect = document.querySelectorAll("input[data-prop]");
+            inputsToConnect.forEach(connectDebugInput);
 
 
             function connectDebugInput(inpt) {
