@@ -88,6 +88,9 @@
             init();
         }
         function init() {
+            var search = new URLSearchParams(location.search);
+
+            
             window.ANIM_LENGTH = search.has("d") ? parseFloat(search.get("d")) : 10000;
             window.MAGNITUDE = search.has("m") ? parseFloat(search.get("m")) : 0.25;
             window.WAVELENGTH = search.has("w") ? parseFloat(search.get("w")) : 0.125;
