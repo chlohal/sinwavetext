@@ -73,62 +73,97 @@
     </style>
     <script>
         var search = new URLSearchParams(location.search);
-        var ANIM_LENGTH = search.has("d") ? parseFloat(search.get("d")) : 10000;
-        var MAGNITUDE = search.has("m") ? parseFloat(search.get("m")) : 0.25;
-        var WAVELENGTH = search.has("w") ? parseFloat(search.get("w")) : 0.125;
-        var ROTATION_DAMPING_FACTOR = search.has("r") ? parseFloat(search.get("r")) : 0.5;
-        var STEPS = search.has("s") ? parseInt(search.get("s")) : 0;
-        var COLOR_ANIM_START = search.has("c") ? parseFloat(search.get("c")) : 240;
-        var COLOR_ANIM_END = search.has("a") ? parseFloat(search.get("a")) : 360;
-        var REPEAT = search.has("p") ? parseInt(search.get("p")) : 1;
-        var BACKGROUND = search.has("b") ? "#" + search.get("b") : "#efefef";
-        var SLOPE = search.has("n") ? parseFloat(search.get("n")) : 0;
-        var FONTSIZE = search.has("o") ? parseFloat(search.get("o")) : 2;
-        var FONT = search.has("f") ? search.get("f") : "";
-        var TEXT = search.has("t") ? search.get("t") : "matt's the celeste wizard :)";
 
-        if(FONT) loadFont();
 
-        var positions = [];
-        var letterElems = [];
-
-        var animationPosCache = {};
-        
-        window.addEventListener("load", function () {
-            setPageBg();
-            setFontSize();
-            createLetterElements();
-
-            //re-calculate on window resize. Seperate calls by at least 100ms to prevent lag when resizing.
-            window.addEventListener('resize', debounce(100, function(event){
-                positions = calculateXPositions(letterElems);
-            }));
-
-            requestAnimationFrame(function anim(timestamp) {
-                var animFrameCount = Math.round(ANIM_LENGTH/1000 * 60);
-                //calculate the percentage into the animation we are. Round to nearest (60 * animation seconds)th for 60 FPS.
-                var animPosition = (timestamp % ANIM_LENGTH) / ANIM_LENGTH;
-                animPosition = Math.round(animPosition*animFrameCount)/animFrameCount;
-
-                var wavePosition = animPosition * Math.PI*2;
-
-                for(var i = 0; i < letterElems.length; i++) {
-                    var xPos = positions[i];
-                                                                                     //center for slope calculation
-                    var yPos = Math.sin((xPos + wavePosition)/WAVELENGTH)*MAGNITUDE + ((0.5-xPos) * SLOPE);
-                    //snap to given step amount
-                    if(STEPS > 0) yPos = ((Math.floor(yPos*STEPS)) / STEPS) + (1 / (STEPS * 2));
+        if(search.has("i")) {
+            fetch(`/.netlify/functions/get?i=` + search.get("i")).then(function(response) {
+                console.log(response);
+                response.text().then(function(qS) {
+                    updateQueryStringFromLocalChanges(qS);
+                    init();
+                })
                 
-                    letterElems[i].style.color = `hsl(${(wavePosition+xPos)*Math.abs(COLOR_ANIM_END - COLOR_ANIM_START)+Math.min(COLOR_ANIM_START, COLOR_ANIM_END)}, 40%, 30%)`;
-                    letterElems[i].style.transform = `translateY(${yPos}em) rotate(${Math.cos((xPos + wavePosition)/WAVELENGTH)*45*MAGNITUDE*ROTATION_DAMPING_FACTOR}deg)`; 
-                }
+            }).catch(init);
+        } else {
+            init();
+        }
+        function init() {
+            window.ANIM_LENGTH = search.has("d") ? parseFloat(search.get("d")) : 10000;
+            window.MAGNITUDE = search.has("m") ? parseFloat(search.get("m")) : 0.25;
+            window.WAVELENGTH = search.has("w") ? parseFloat(search.get("w")) : 0.125;
+            window.ROTATION_DAMPING_FACTOR = search.has("r") ? parseFloat(search.get("r")) : 0.5;
+            window.STEPS = search.has("s") ? parseInt(search.get("s")) : 0;
+            window.COLOR_ANIM_START = search.has("c") ? parseFloat(search.get("c")) : 240;
+            window.COLOR_ANIM_END = search.has("a") ? parseFloat(search.get("a")) : 360;
+            window.REPEAT = search.has("p") ? parseInt(search.get("p")) : 1;
+            window.BACKGROUND = search.has("b") ? "#" + search.get("b") : "#efefef";
+            window.SLOPE = search.has("n") ? parseFloat(search.get("n")) : 0;
+            window.FONTSIZE = search.has("o") ? parseFloat(search.get("o")) : 2;
+            window.FONT = search.has("f") ? search.get("f") : "";
+            window.TEXT = search.has("t") ? search.get("t") : "matt's the celeste wizard :)";
 
-                requestAnimationFrame(anim);
+            if(FONT) loadFont();
+
+            var positions = [];
+            var letterElems = [];
+
+            var animationPosCache = {};
+            
+            window.addEventListener("load", function () {
+                setPageBg();
+                setFontSize();
+                createLetterElements();
+
+                //re-calculate on window resize. Seperate calls by at least 100ms to prevent lag when resizing.
+                window.addEventListener('resize', debounce(100, function(event){
+                    positions = calculateXPositions(letterElems);
+                }));
+
+                document.getElementById("shortlink").addEventListener("click", function() {
+                    updateQueryStringFromLocalChanges();
+
+                    var query = window.location.search;
+
+                    fetch("/.netlify/functions/save", {
+                        method: "POST",
+                        mode: "cors", 
+                        cache: "no-cache",
+                        credentials: "same-origin",
+                        body: query
+                    }).then(function(response) {
+                        response.text().then(function(resText) {
+                            updateQueryStringFromLocalChanges(`?i=${resText}`)
+                        });
+                    });
+                });
+
+                requestAnimationFrame(function anim(timestamp) {
+                    var animFrameCount = Math.round(ANIM_LENGTH/1000 * 60);
+                    //calculate the percentage into the animation we are. Round to nearest (60 * animation seconds)th for 60 FPS.
+                    var animPosition = (timestamp % ANIM_LENGTH) / ANIM_LENGTH;
+                    animPosition = Math.round(animPosition*animFrameCount)/animFrameCount;
+
+                    var wavePosition = animPosition * Math.PI*2;
+
+                    for(var i = 0; i < letterElems.length; i++) {
+                        var xPos = positions[i];
+                                                                                        //center for slope calculation
+                        var yPos = Math.sin((xPos + wavePosition)/WAVELENGTH)*MAGNITUDE + ((0.5-xPos) * SLOPE);
+                        //snap to given step amount
+                        if(STEPS > 0) yPos = ((Math.floor(yPos*STEPS)) / STEPS) + (1 / (STEPS * 2));
+                    
+                        letterElems[i].style.color = `hsl(${(wavePosition+xPos)*Math.abs(COLOR_ANIM_END - COLOR_ANIM_START)+Math.min(COLOR_ANIM_START, COLOR_ANIM_END)}, 40%, 30%)`;
+                        letterElems[i].style.transform = `translateY(${yPos}em) rotate(${Math.cos((xPos + wavePosition)/WAVELENGTH)*45*MAGNITUDE*ROTATION_DAMPING_FACTOR}deg)`; 
+                    }
+
+                    requestAnimationFrame(anim);
+                });
+
+                var inputsToConnect = document.querySelectorAll("input[data-prop]");
+                inputsToConnect.forEach(connectDebugInput);
             });
 
-            var inputsToConnect = document.querySelectorAll("input[data-prop]");
-            inputsToConnect.forEach(connectDebugInput);
-        });
+        }
 
 
         function connectDebugInput(inpt) {
@@ -142,10 +177,10 @@
             });
         }
 
-        function updateQueryStringFromLocalChanges() {
+        function updateQueryStringFromLocalChanges(qS) {
             var url = window.location.toString();
 
-            var newUrl = url.replace(window.location.search, "") + buildQuery();
+            var newUrl = url.replace(window.location.search, "") + (qS||buildQuery());
             history.replaceState(null, "", newUrl);
         }
 
@@ -191,18 +226,18 @@
 
         function buildQuery() {
             return "?d=" + ANIM_LENGTH + 
-                   "&m=" + MAGNITUDE +
-                   "&w=" + WAVELENGTH +
-                   "&r=" + ROTATION_DAMPING_FACTOR +
-                   "&s=" + STEPS +
-                   "&c=" + COLOR_ANIM_START +
-                   "&a=" + COLOR_ANIM_END +
-                   "&b=" + BACKGROUND.substring(1) +
-                   "&f=" + encodeURIComponent(FONT) +
-                   "&t=" + encodeURIComponent(TEXT) + 
-                   "&p=" + REPEAT +
-                   "&o=" + FONTSIZE +
-                   "&n=" + SLOPE;
+                "&m=" + MAGNITUDE +
+                "&w=" + WAVELENGTH +
+                "&r=" + ROTATION_DAMPING_FACTOR +
+                "&s=" + STEPS +
+                "&c=" + COLOR_ANIM_START +
+                "&a=" + COLOR_ANIM_END +
+                "&b=" + BACKGROUND.substring(1) +
+                "&f=" + encodeURIComponent(FONT) +
+                "&t=" + encodeURIComponent(TEXT) + 
+                "&p=" + REPEAT +
+                "&o=" + FONTSIZE +
+                "&n=" + SLOPE;
         }
 
         function calculateXPositions(letterElems) {

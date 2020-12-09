@@ -1,4 +1,4 @@
-exports.handler = async function (event, context) {
+exports.handler = function (event, context, callback) {
     
 
     var https = require("https");
@@ -17,22 +17,19 @@ exports.handler = async function (event, context) {
         res.setEncoding("utf8");
 
         res.on("data", function (body) {
-            console.log(body);
-
-            var jsonResBody = JSON.parse(body);
-            return {
-                statusCode: 201,
-                body: jsonResBody.length
-            };
+            callback(null, {
+                statusCode: 200,
+                body: body + ""
+            });
         });
     });
 
     req.on("error", function(err) {
         console.log(err);
-        return {
+        callback(null, {
             statusCode: 500,
             body: err.message
-        }
+        })
     });
 
     req.end();
