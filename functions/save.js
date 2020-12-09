@@ -24,7 +24,7 @@ exports.handler = function (event, context, callback) {
             var len = JSON.parse(body).length;
             callback(null, {
                 statusCode: 200,
-                body: len + ""
+                body: (len-1) + ""
             });
         });
     });
