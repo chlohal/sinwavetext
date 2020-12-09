@@ -163,64 +163,101 @@
                 inputsToConnect.forEach(connectDebugInput);
             });
 
-        }
 
+            function connectDebugInput(inpt) {
+                inpt.value = window[inpt.getAttribute("data-prop")];
+                
+                inpt.addEventListener("input", function() {
+                    window[inpt.getAttribute("data-prop")] = inpt.value;
+                    if(inpt.hasAttribute("data-prop-reprocess")) window[inpt.getAttribute("data-prop-reprocess")]();
 
-        function connectDebugInput(inpt) {
-            inpt.value = window[inpt.getAttribute("data-prop")];
+                    updateQueryStringFromLocalChanges();
+                });
+            }
+
+            function setPageBg() {
+                document.body.style.background = BACKGROUND;
+            }
+
+            function setFontSize() {
+                document.body.style.fontSize = FONTSIZE + "em";
+                positions = calculateXPositions(letterElems);
+            }
+
+            function createLetterElements() {
+                document.getElementById("title").innerText = TEXT.substring(0,127);
+
+                var repeated = TEXT.repeat(REPEAT);
+                var letters = repeated.split("");
+
+                letterElems = [];
+
+                clearChildren(document.getElementById("t"));
+
+                letters.forEach(function (l, i) {
+                    var lttr = document.createElement("span");
+                    letterElems.push(lttr);
+                    lttr.innerText = l;
+
+                    document.getElementById("t").appendChild(lttr);
+                });
+
+                //cache x-positions for better performance later
+                positions = calculateXPositions(letterElems);
+
+                //invalidate cache after updating 
+                animationPosCache = {};
+            }
+
+            function clearChildren(elem) {
+                while(elem.children[0]) {
+                    elem.removeChild(elem.children[0]);
+                }
+            }
+
             
-            inpt.addEventListener("input", function() {
-                window[inpt.getAttribute("data-prop")] = inpt.value;
-                if(inpt.hasAttribute("data-prop-reprocess")) window[inpt.getAttribute("data-prop-reprocess")]();
 
-                updateQueryStringFromLocalChanges();
-            });
-        }
+            function calculateXPositions(letterElems) {
+                var positions = [];
+                letterElems.forEach(function(l, i) {
+                    let rect = l.getBoundingClientRect();
+                    positions.push((rect.x + rect.width / 2)/ window.innerWidth);
+                });
+                return positions;
+            }
 
-        function updateQueryStringFromLocalChanges(qS) {
-            var url = window.location.toString();
 
-            var newUrl = url.replace(window.location.search, "") + (qS||buildQuery());
-            history.replaceState(null, "", newUrl);
-        }
+            function debounce(delay, cb) {
+                var timeout;
 
-        function setPageBg() {
-            document.body.style.background = BACKGROUND;
-        }
+                return function() {
+                    var context = this, args = arguments;
 
-        function setFontSize() {
-            document.body.style.fontSize = FONTSIZE + "em";
-            positions = calculateXPositions(letterElems);
-        }
+                    if(timeout) clearTimeout(timeout);
+                    timeout = setTimeout(function() {
+                        cb.apply(context, args);
+                    }, delay)
+                }
+            }
 
-        function createLetterElements() {
-            document.getElementById("title").innerText = TEXT.substring(0,127);
+            function loadFont() {
+                var fontName = FONT;
+                var formFontName = fontName.replace(/ /g, "+");
+                var gFontUrl = `https://fonts.googleapis.com/css2?family=${formFontName}&display=swap`;
 
-            var repeated = TEXT.repeat(REPEAT);
-            var letters = repeated.split("");
+                var link = document.createElement("link");
+                link.href = gFontUrl;
+                link.rel = "stylesheet";
+                link.addEventListener("load", function() {
+                    positions = calculateXPositions(letterElems);
+                });
+                link.addEventListener("error", function() {
+                    positions = calculateXPositions(letterElems);
+                })
 
-            letterElems = [];
+                document.head.appendChild(link);
 
-            clearChildren(document.getElementById("t"));
-
-            letters.forEach(function (l, i) {
-                var lttr = document.createElement("span");
-                letterElems.push(lttr);
-                lttr.innerText = l;
-
-                document.getElementById("t").appendChild(lttr);
-            });
-
-            //cache x-positions for better performance later
-            positions = calculateXPositions(letterElems);
-
-            //invalidate cache after updating 
-            animationPosCache = {};
-        }
-
-        function clearChildren(elem) {
-            while(elem.children[0]) {
-                elem.removeChild(elem.children[0]);
+                document.documentElement.style.fontFamily = formFontName.replace(/\+/g, " ") + ", cursive";
             }
         }
 
@@ -240,48 +277,13 @@
                 "&n=" + SLOPE;
         }
 
-        function calculateXPositions(letterElems) {
-            var positions = [];
-            letterElems.forEach(function(l, i) {
-                let rect = l.getBoundingClientRect();
-                positions.push((rect.x + rect.width / 2)/ window.innerWidth);
-            });
-            return positions;
+        function updateQueryStringFromLocalChanges(qS) {
+            var url = window.location.toString();
+
+            var newUrl = url.replace(window.location.search, "") + (qS||buildQuery());
+            history.replaceState(null, "", newUrl);
         }
 
-
-        function debounce(delay, cb) {
-            var timeout;
-
-            return function() {
-                var context = this, args = arguments;
-
-                if(timeout) clearTimeout(timeout);
-                timeout = setTimeout(function() {
-                    cb.apply(context, args);
-                }, delay)
-            }
-        }
-
-        function loadFont() {
-            var fontName = FONT;
-            var formFontName = fontName.replace(/ /g, "+");
-            var gFontUrl = `https://fonts.googleapis.com/css2?family=${formFontName}&display=swap`;
-
-            var link = document.createElement("link");
-            link.href = gFontUrl;
-            link.rel = "stylesheet";
-            link.addEventListener("load", function() {
-                positions = calculateXPositions(letterElems);
-            });
-            link.addEventListener("error", function() {
-                positions = calculateXPositions(letterElems);
-            })
-
-            document.head.appendChild(link);
-
-            document.documentElement.style.fontFamily = formFontName.replace(/\+/g, " ") + ", cursive";
-        }
     </script>
     <script async defer src="https://counter.clh.sh/counter.js"></script>
 </head>
