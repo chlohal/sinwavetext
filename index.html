@@ -2,6 +2,7 @@
 
 <head>
     <title id="title">matt is the celeste wizard person of course</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative&display=swap" rel="stylesheet">
@@ -122,7 +123,7 @@
             createLetterElements();
 
             //re-calculate on window resize. Seperate calls by at least 100ms to prevent lag when resizing.
-            window.addEventListener('resize', debounce(100, function(event){
+            window.addEventListener('resize', debounce(100, function(event) {
                 positions = calculateXPositions(letterElems);
             }));
 
@@ -214,6 +215,7 @@
                 //invalidate cache after updating 
                 animationPosCache = {};
             }
+            window.createLetterElements = createLetterElements;
 
             function clearChildren(elem) {
                 while(elem.children[0]) {
