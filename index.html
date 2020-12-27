@@ -186,10 +186,14 @@
                 document.body.style.background = BACKGROUND;
             }
 
+            window.setPageBg = setPageBg;
+
             function setFontSize() {
                 document.body.style.fontSize = FONTSIZE + "em";
                 positions = calculateXPositions(letterElems);
             }
+
+            window.setFontSize = setFontSize;
 
             function createLetterElements() {
                 document.getElementById("title").innerText = TEXT.substring(0,127);
@@ -267,6 +271,8 @@
 
                 document.documentElement.style.fontFamily = formFontName.replace(/\+/g, " ") + ", cursive";
             }
+
+            window.loadFont = loadFont;
         }
 
         function buildQuery() {
