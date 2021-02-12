@@ -127,24 +127,6 @@
                 positions = calculateXPositions(letterElems);
             }));
 
-            document.getElementById("shortlink").addEventListener("click", function() {
-                updateQueryStringFromLocalChanges();
-
-                var query = window.location.search;
-
-                fetch("/.netlify/functions/save", {
-                    method: "POST",
-                    mode: "cors", 
-                    cache: "no-cache",
-                    credentials: "same-origin",
-                    body: query
-                }).then(function(response) {
-                    response.text().then(function(resText) {
-                        updateQueryStringFromLocalChanges(`?i=${resText}`);
-                    });
-                });
-            });
-
             requestAnimationFrame(function anim(timestamp) {
                 var animFrameCount = Math.round(ANIM_LENGTH/1000 * 60);
                 //calculate the percentage into the animation we are. Round to nearest (60 * animation seconds)th for 60 FPS.
